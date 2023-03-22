@@ -1,4 +1,4 @@
-package Block
+package BlockChain
 
 import (
 	"bytes"
@@ -7,18 +7,18 @@ import (
 )
 
 type Block struct {
-	Hash     []byte
-	Data     []byte
-	PrevHash []byte
-	Nonce    int
+	Hash         []byte
+	Transactions []*Transaction
+	PrevHash     []byte
+	Nonce        int
 }
 
-func Genesis() *Block {
-	return CreateBlock("Genesis", []byte{})
+func Genesis(coinbase *Transaction) *Block {
+	return CreateBlock([]*Transaction{coinbase}, []byte{})
 }
 
-func CreateBlock(data string, prevHash []byte) *Block {
-	block := &Block{[]byte{}, []byte(data), prevHash, 0}
+func CreateBlock(txs []*Transaction, prevHash []byte) *Block {
+	block := &Block{[]byte{}, txs, prevHash, 0}
 	pow := NewProof(block)
 	nonce, hash := pow.Run()
 
@@ -26,6 +26,18 @@ func CreateBlock(data string, prevHash []byte) *Block {
 	block.Hash = hash
 
 	return block
+}
+
+func (b Block) HashTransactions() []byte {
+	var txHashes [][]byte
+
+	for _, tx := range b.Transactions {
+		txHashes = append(txHashes, tx.Serialize())
+	}
+
+	tree := NewMerkleTree(txHashes)
+
+	return tree.RootNode.Data
 }
 
 func (b *Block) Serialize() []byte {
@@ -47,9 +59,3 @@ func Deserialize(data []byte) *Block {
 
 	return &block
 }
-
-//func (b *Block) DeriveHash() {
-//	info := bytes.Join([][]byte{b.Data, b.PrevHash}, []byte{})
-//	hash := sha256.Sum256(info)
-//	b.Hash = hash[:]
-//}
