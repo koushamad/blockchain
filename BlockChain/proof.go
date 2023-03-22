@@ -1,4 +1,4 @@
-package Block
+package BlockChain
 
 import (
 	"bytes"
